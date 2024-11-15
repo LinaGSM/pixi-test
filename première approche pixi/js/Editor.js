@@ -1,3 +1,8 @@
+let app = new PIXI.Application();
+await app.init(
+    { width: 640, height: 360 } // voir si on peut changer en pourcentage de fenêtre
+);
+
 // Conception de l'éditeur: organisation de ce qui va être dessiné sur l'écran 
 // Class Editor, Class Region, Class Notes
 
@@ -22,7 +27,7 @@ maNote.graphisme.buttonMode = true; // Affiche le curseur comme une main sur hov
 
 
 
-function drawGrid(rows, cols, cellSize, app) {
+function drawGrid(rows, cols, cellSize) {
     let grid = new PIXI.Graphics();
     grid.strokeStyle = "white";
 
@@ -41,7 +46,15 @@ function drawGrid(rows, cols, cellSize, app) {
     app.stage.addChild(grid);
 }
 
+class Note extends PIXI.Graphics {
+    constructor(x, y, l, h, color) {
+        super();
+        this.rect(0, 0, l, h);
+        this.fill(color);
 
+        this.interactive = true;
+    }
+}
 
 class Editor {
 
@@ -53,25 +66,82 @@ class Editor {
     }
 
     async dessineFenetre() {
-        this.app = new PIXI.Application();
-        await this.app.init(
-            { width: 640, height: 360 } // voir si on peut changer en pourcentage de fenêtre
-        );
+
         let cellSize = 50;
-        drawGrid(5, 10, cellSize, this.app);
+        let gridSnapping = true;
+        drawGrid(5, 10, cellSize, app);
 
         //Dessine app (l'application graphique)
-        document.body.appendChild(this.app.canvas);
+        document.body.appendChild(app.canvas);
+
+        let rectangle = new Note(0, 0, 100, 100, "red");
+
+        let rectangleOld = new PIXI.Graphics();
+        /*
+                rectangle.x = this.start;
+                rectangle.y = this.hauteur * cellSize;
+                rectangle.width = (this.end - this.start) * cellSize;
+                rectangle.height = cellSize;
+        */
+        //Les -1 -2 servent à laisser un espace entre les rectangles
+    
+        app.stage.addChild(rectangle);
+
+        //rectangle.interactive = true;
+
+        rectangle.on('pointerdown', onDragStart);
+
+        let dragTarget = null;
+
+
+        function onDragStart(event) {
+            console.log("onDragStart");
+            // Store a reference to the data
+            // * The reason for this is because of multitouch *
+            // * We want to track the movement of this particular touch *
+            this.alpha = 0.5;
+            dragTarget = event.target;
+            app.stage.on('pointermove', onDragMove);
+        }
+
+        function onDragMove(event) {
+            console.log("onDragMove");
+            if (dragTarget) {
+                console.log("onDragMove dans le if");
+                let mousePos = event.global;
+
+                if (gridSnapping) {
+                    mousePos.x = Math.floor(mousePos.x / cellSize) * cellSize - 50;
+                    mousePos.y = Math.floor(mousePos.y / cellSize) * cellSize - 50;
+                } else {
+                    mousePos.x -= 50;
+                    mousePos.y -= 50;
+                }
+
+                dragTarget.parent.toLocal(mousePos, null, dragTarget.position);
+            }
+
+        }
+
+        function onDragEnd(event) {
+            console.log("onDragEnd");
+            if (dragTarget) {
+                console.log("onDragEnd dans le if");
+                app.stage.off('pointermove', onDragMove);
+                dragTarget.alpha = 1;
+                dragTarget = null;
+            }
+        }
 
         //let rectangle = maNote.creationRectangle(cellSize);
-        this.app.stage.addChild(maNote.graphisme);
+        //app.stage.addChild(maNote.graphisme);
 
 
         // Ajouter un écouteur d'événement pour détecter les clics
-        maNote.graphisme.on('pointerdown', onClick);
+        // maNote.graphisme.on('pointerdown', onClick);
 
         // Setup events for mouse + touch using the pointer events
-        maNote.graphisme.on('pointerdown', onDragStart, maNote.graphisme);
+        // maNote.graphisme.on('pointerdown', onDragStart, maNote.graphisme);
 
 
         // Center the maNote.graphisme's anchor point
@@ -80,11 +150,11 @@ class Editor {
         // Make it a bit bigger, so it's easier to grab
         //maNote.graphisme.scale.set(3);
 
-        this.app.stage.interactive = true;
-        this.app.stage.eventMode = 'static';
-        this.app.stage.hitArea = this.app.screen;
-        this.app.stage.on('pointerup', onDragEnd);
-        this.app.stage.on('pointerupoutside', onDragEnd);
+        app.stage.interactive = true;
+        app.stage.eventMode = 'static';
+        app.stage.hitArea = app.screen;
+        app.stage.on('pointerup', onDragEnd);
+        app.stage.on('pointerupoutside', onDragEnd);
 
 
 
@@ -97,7 +167,7 @@ class Editor {
         ////// OnDrag //////
 
 
-        function onDragStart(event) {
+        function onDragStart1(event) {
             console.log("onDragStart");
             // Store a reference to the data
             // * The reason for this is because of multitouch *
@@ -107,14 +177,14 @@ class Editor {
             maNote.graphisme.on('pointermove', onDragMove);
         }
 
-        function onDragMove(event) {
+        function onDragMove1(event) {
             let mousePosition = event.data.global;
             if (dragTarget) {
                 //définir ce que fait le dragMove : ici on déplace la note
                 console.log("x,y = " + event.data.global.x + " " + event.data.global.y);
                 //maNote.moveTo(event.data.global.x, event.data.global.y);
-                maNote.moveTo(mousePosition.x , mousePosition.y )  // Déplacer le rectangle pour le centrer sur la souris
-                
+                maNote.moveTo(mousePosition.x, mousePosition.y)  // Déplacer le rectangle pour le centrer sur la souris
+
                 console.log("onDragMove");
                 dragTarget.parent.toLocal(event.global, null, dragTarget.position);
 
@@ -122,7 +192,7 @@ class Editor {
             }
         }
 
-        function onDragEnd(event) {
+        function onDragEnd1(event) {
             if (dragTarget) {
                 console.log("onDragEnd");
                 //définir ce que fait le dragEnd
@@ -133,7 +203,10 @@ class Editor {
             }
         }
 
+
     }
+
+
 
 }
 
