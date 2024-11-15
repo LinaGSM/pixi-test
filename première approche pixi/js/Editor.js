@@ -76,7 +76,6 @@ class Editor {
                 rectangle.width = (this.end - this.start) * cellSize;
                 rectangle.height = cellSize;
         */
-        //Les -1 -2 servent à laisser un espace entre les rectangles
     
         app.stage.addChild(rectangle);
 
