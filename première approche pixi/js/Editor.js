@@ -18,14 +18,7 @@ let dragTarget = null;
 let maNote = new Notes(0, 5, 5);
 
 maNote.graphisme.interactive = true;
-maNote.graphisme.buttonMode = true; // Affiche le curseur comme une main sur hover
-
-/////Pour le Drag/////
-
-
-
-
-
+//maNote.graphisme.buttonMode = true; 
 
 function drawGrid(rows, cols, cellSize) {
     let grid = new PIXI.Graphics();
@@ -49,7 +42,7 @@ function drawGrid(rows, cols, cellSize) {
 class Note extends PIXI.Graphics {
     constructor(x, y, l, h, color) {
         super();
-        this.rect(0, 0, l, h);
+        this.rect(0, 0+1, l-1, h-1);
         this.fill(color);
 
         this.interactive = true;
@@ -74,7 +67,7 @@ class Editor {
         //Dessine app (l'application graphique)
         document.body.appendChild(app.canvas);
 
-        let rectangle = new Note(0, 0, 100, 100, "red");
+        let rectangle = new Note(0, 0, cellSize, cellSize, "red");
 
         let rectangleOld = new PIXI.Graphics();
         /*
@@ -83,7 +76,6 @@ class Editor {
                 rectangle.width = (this.end - this.start) * cellSize;
                 rectangle.height = cellSize;
         */
-        //Les -1 -2 servent à laisser un espace entre les rectangles
     
         app.stage.addChild(rectangle);
 
@@ -107,7 +99,7 @@ class Editor {
         function onDragMove(event) {
             console.log("onDragMove");
             if (dragTarget) {
-                console.log("onDragMove dans le if");
+                //sconsole.log("onDragMove dans le if");
                 let mousePos = event.global;
 
                 if (gridSnapping) {
@@ -118,7 +110,18 @@ class Editor {
                     mousePos.y -= 50;
                 }
 
+                
+
                 dragTarget.parent.toLocal(mousePos, null, dragTarget.position);
+
+                if(dragTarget.x < 0) {
+                    //on sort de la grille
+                    dragTarget.x = 0;
+                }
+                if(dragTarget.y < 0) {
+                    //on sort de la grille
+                    dragTarget.y = 0;
+                }
             }
 
         }
@@ -132,9 +135,6 @@ class Editor {
                 dragTarget = null;
             }
         }
-
-        //let rectangle = maNote.creationRectangle(cellSize);
-        //app.stage.addChild(maNote.graphisme);
 
 
         // Ajouter un écouteur d'événement pour détecter les clics
