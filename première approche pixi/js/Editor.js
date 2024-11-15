@@ -137,9 +137,6 @@ class Editor {
             }
         }
 
-        //let rectangle = maNote.creationRectangle(cellSize);
-        //app.stage.addChild(maNote.graphisme);
-
 
         // Ajouter un écouteur d'événement pour détecter les clics
         // maNote.graphisme.on('pointerdown', onClick);
