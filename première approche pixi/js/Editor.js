@@ -1,4 +1,16 @@
+//%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%//
+//%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% Réfactoring:%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%//
+//%%%%%%%%%%%%%%%%%%%%%%%%%%%% C:\Lina\MASTER\PROJET DS4H\OnMyOwn\Refactoring%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%//
+//%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%//
+
+let monEditor;
 let app = new PIXI.Application();
+let elementsDeEditor = [];
+
+let cellSizeHAUTEUR = 50;
+let cellSizeLARGEUR = 100;
+let gridSnapping = true;
+
 await app.init(
     { width: 640, height: 360 } // voir si on peut changer en pourcentage de fenêtre
 );
@@ -7,31 +19,41 @@ await app.init(
 // Class Editor, Class Region, Class Notes
 
 //A faire : ajouter les fonctionnalités d''Amped Studio' 
-//(zoom, déplacement de ce que l'on voit de la grille, création de notes,...)
+//(déplacement de ce que l'on voit de la grille,...)
+/* zoom: Ok ---> Gérer les dézoom pour le scale < 1.0 */
+/* création de notes: Ok */
+/* déplacement des notes: Ok */
 
-//A faire la prochaine fois : faire afficher la note créée.
 
-import { Notes } from "./Notes.js";
-import { Region } from "./Region.js";
+//A faire : Classe Grille qui contient les régions qui elles-mêmes contiennent les notes
+
+//A faire : rendre modifiable le nombre de lignes et de colonnes de la grille
+/* ---> J'ai rendu modifiable la taille des cellules de la grille (cellSizeHAUTEUR, cellSizeLARGEUR)*/
+
+//A faire : rendre modifiable la taille des notes (longueur en temps)
+
+//A faire : Gérer le temps (temps pixel) pour le curseur parcouru
 
 let dragTarget = null;
-let maNote = new Notes(0, 5, 5);
 
-maNote.graphisme.interactive = true;
-//maNote.graphisme.buttonMode = true; 
+let lignesHorizontales = [];
+let lignesVerticales = [];
+let maRegion = [];
 
-function drawGrid(rows, cols, cellSize) {
+//Fonction pour dessiner la grille
+
+function drawGrid(rows, cols, cellSizeHAUTEUR, cellSizeLARGEUR) {
     let grid = new PIXI.Graphics();
     grid.strokeStyle = "white";
 
-    for (let row = 0; row * cellSize <= app.canvas.height; row++) {
-        grid.moveTo(0, row * cellSize);
-        grid.lineTo(app.canvas.width, row * cellSize);
+    for (let row = 0; row * cellSizeHAUTEUR <= app.canvas.height; row++) {
+        grid.moveTo(0, row * cellSizeHAUTEUR);
+        grid.lineTo(app.canvas.width, row * cellSizeHAUTEUR);
     }
 
-    for (let col = 0; col * cellSize <= app.canvas.width; col++) {
-        grid.moveTo(col * cellSize, 0);
-        grid.lineTo(col * cellSize, app.canvas.height);
+    for (let col = 0; col * cellSizeLARGEUR <= app.canvas.width; col++) {
+        grid.moveTo(col * cellSizeLARGEUR, 0);
+        grid.lineTo(col * cellSizeLARGEUR, app.canvas.height);
     }
 
     grid.stroke();
@@ -39,15 +61,23 @@ function drawGrid(rows, cols, cellSize) {
     app.stage.addChild(grid);
 }
 
+//Classe Note
+
 class Note extends PIXI.Graphics {
     constructor(x, y, l, h, color) {
         super();
-        this.rect(0, 0+1, l-1, h-1);
+        this.rect(0, 1, l - 1, h - 1);
         this.fill(color);
+        this.position.set(x, y);
 
         this.interactive = true;
+        maRegion.push(this);
+
     }
+
 }
+
+//Classe Editor
 
 class Editor {
 
@@ -55,81 +85,41 @@ class Editor {
 
     constructor() {
         console.log("Editor constructor");
-        //this.dessineFenetre();
     }
 
+    //Revoir la conception de dessineFenetre
     async dessineFenetre() {
 
-        let cellSize = 50;
-        let gridSnapping = true;
-        drawGrid(5, 10, cellSize, app);
+        drawGrid(5, 10, cellSizeHAUTEUR, cellSizeLARGEUR);
 
         //Dessine app (l'application graphique)
         document.body.appendChild(app.canvas);
 
-        let rectangle = new Note(0, 0, cellSize, cellSize, "red");
-
-        let rectangleOld = new PIXI.Graphics();
-        /*
-                rectangle.x = this.start;
-                rectangle.y = this.hauteur * cellSize;
-                rectangle.width = (this.end - this.start) * cellSize;
-                rectangle.height = cellSize;
-        */
-    
-        app.stage.addChild(rectangle);
-
-        //rectangle.interactive = true;
-
-        rectangle.on('pointerdown', onDragStart);
-
         let dragTarget = null;
 
-
         function onDragStart(event) {
-            console.log("onDragStart");
-            // Store a reference to the data
-            // * The reason for this is because of multitouch *
-            // * We want to track the movement of this particular touch *
             this.alpha = 0.5;
-            dragTarget = event.target;
+            dragTarget = this;
             app.stage.on('pointermove', onDragMove);
         }
 
         function onDragMove(event) {
-            console.log("onDragMove");
+
             if (dragTarget) {
-                //sconsole.log("onDragMove dans le if");
-                let mousePos = event.global;
-
+                dragTarget.parent.toLocal(event.global, null, dragTarget.position);
                 if (gridSnapping) {
-                    mousePos.x = Math.floor(mousePos.x / cellSize) * cellSize - 50;
-                    mousePos.y = Math.floor(mousePos.y / cellSize) * cellSize - 50;
-                } else {
-                    mousePos.x -= 50;
-                    mousePos.y -= 50;
-                }
-
-                
-
-                dragTarget.parent.toLocal(mousePos, null, dragTarget.position);
-
-                if(dragTarget.x < 0) {
-                    //on sort de la grille
-                    dragTarget.x = 0;
-                }
-                if(dragTarget.y < 0) {
-                    //on sort de la grille
-                    dragTarget.y = 0;
+                    dragTarget.x = Math.floor(dragTarget.x / cellSizeLARGEUR) * cellSizeLARGEUR;
+                    dragTarget.y = Math.floor(dragTarget.y / cellSizeHAUTEUR) * cellSizeHAUTEUR;
                 }
             }
 
+            return;
         }
 
+
+
         function onDragEnd(event) {
-            console.log("onDragEnd");
             if (dragTarget) {
-                console.log("onDragEnd dans le if");
                 app.stage.off('pointermove', onDragMove);
                 dragTarget.alpha = 1;
                 dragTarget = null;
@@ -137,18 +127,6 @@ class Editor {
         }
 
 
-        // Ajouter un écouteur d'événement pour détecter les clics
-        // maNote.graphisme.on('pointerdown', onClick);
-
-        // Setup events for mouse + touch using the pointer events
-        // maNote.graphisme.on('pointerdown', onDragStart, maNote.graphisme);
-
-
-        // Center the maNote.graphisme's anchor point
-        //maNote.graphisme.anchor.set(0.5);
-
-        // Make it a bit bigger, so it's easier to grab
-        //maNote.graphisme.scale.set(3);
 
         app.stage.interactive = true;
         app.stage.eventMode = 'static';
@@ -156,60 +134,77 @@ class Editor {
         app.stage.on('pointerup', onDragEnd);
         app.stage.on('pointerupoutside', onDragEnd);
 
+        app.stage.on('pointertap', detecteDoubleClic);
 
+        // Écouter l'événement pointertap (qui détecte un clic ) et appelle double clic seulement si
+        // un deuxieme clic est detecté, avec un interval (doubleClickInterval) entre les deux clics
 
-
-        function onClick(event) {
-            console.log("click x y =" + event.data.global.x + " " + event.data.global.y);
-        }
-
-
-        ////// OnDrag //////
-
-
-        function onDragStart1(event) {
-            console.log("onDragStart");
-            // Store a reference to the data
-            // * The reason for this is because of multitouch *
-            // * We want to track the movement of this particular touch *
-            this.alpha = 0.5;//pour la transparence
-            dragTarget = maNote.graphisme;
-            maNote.graphisme.on('pointermove', onDragMove);
-        }
-
-        function onDragMove1(event) {
-            let mousePosition = event.data.global;
-            if (dragTarget) {
-                //définir ce que fait le dragMove : ici on déplace la note
-                console.log("x,y = " + event.data.global.x + " " + event.data.global.y);
-                //maNote.moveTo(event.data.global.x, event.data.global.y);
-                maNote.moveTo(mousePosition.x, mousePosition.y)  // Déplacer le rectangle pour le centrer sur la souris
-
-                console.log("onDragMove");
-                dragTarget.parent.toLocal(event.global, null, dragTarget.position);
-
-
+        // Variables pour la détection du double-clic
+        function detecteDoubleClic(event) {
+            const currentTime = Date.now();
+            if (currentTime - lastClickTime < doubleClickInterval) {
+                onDoubleClick(event); // Appelle la fonction associée au double-clic
             }
+            
+            lastClickTime = currentTime;
         }
 
-        function onDragEnd1(event) {
-            if (dragTarget) {
-                console.log("onDragEnd");
-                //définir ce que fait le dragEnd
-                //maNote.moveTo(event.data.global.x, event.data.global.y);
-                maNote.graphisme.off('pointermove', onDragMove);
-                dragTarget.alpha = 1;//fin de la transparence       /*compris */
-                dragTarget = null;//"Réinitialisation" de dragTarget    /*compris */
+        function onDoubleClick(event) {
+            //créer une note dans la cell du double clic
+
+            let mousePos = event.global;
+
+            mousePos.x /= app.stage.scale.x;
+            mousePos.y /= app.stage.scale.y;
+
+            gridSnapping = true
+            if (gridSnapping) {
+                mousePos.x = Math.floor(mousePos.x / cellSizeLARGEUR) * cellSizeLARGEUR;
+                mousePos.y = Math.floor(mousePos.y / cellSizeHAUTEUR) * cellSizeHAUTEUR;
             }
+
+            let carre = new Note(mousePos.x, mousePos.y, cellSizeLARGEUR, cellSizeHAUTEUR, "blue");
+            app.stage.addChild(carre);
+            elementsDeEditor.push(carre);
+
+            carre.on('pointerdown', onDragStart);
         }
 
+
+
+
+        // Variables pour la détection du double-clic
+        let lastClickTime = 0; // Temps du dernier clic
+        const doubleClickInterval = 300; // Intervalle en millisecondes pour considérer un double-clic
 
     }
+}
 
 
+function init() {
+    let sliderZoomHorizontal = document.getElementById("sliderZoomHorizontal");
+    let sliderZoomVertical = document.getElementById("sliderZoomVertical");
+
+
+    let zoomValueHorizontal = 1.0;
+    let zoomValueVertical = 1.0;
+
+
+    sliderZoomHorizontal
+        .addEventListener("input", () => {
+            zoomValueHorizontal = parseFloat(sliderZoomHorizontal.value);
+            app.stage.scale.set(zoomValueHorizontal, zoomValueVertical);
+        });
+
+    sliderZoomVertical
+        .addEventListener("input", () => {
+            zoomValueVertical = parseFloat(sliderZoomVertical.value);
+            app.stage.scale.set(zoomValueHorizontal, zoomValueVertical);
+        });
+
+    monEditor = new Editor();
+    monEditor.dessineFenetre();
 
 }
 
-let monEditor = new Editor();
-
-window.onload = monEditor.dessineFenetre();
+window.onload = init;
