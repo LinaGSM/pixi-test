@@ -28,7 +28,8 @@ await app.init(
 //A faire : Classe Grille qui contient les régions qui elles-mêmes contiennent les notes
 
 //A faire : rendre modifiable le nombre de lignes et de colonnes de la grille
-/* ---> J'ai rendu modifiable la taille des cellules de la grille (cellSizeHAUTEUR, cellSizeLARGEUR)*/
+/* ---> J'ai rendu modifiable la taille des cel
+lules de la grille (cellSizeHAUTEUR, cellSizeLARGEUR)*/
 
 //A faire : rendre modifiable la taille des notes (longueur en temps)
 
